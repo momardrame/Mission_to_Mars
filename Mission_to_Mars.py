@@ -12,6 +12,8 @@ browser = Browser("chrome", **executable_path)
 #visit thr Mars NASA news site
 url ="https://mars.nasa.gov/news"
 browser.visit(url)
+
+# Optional delay for loading the page
 browser.is_element_present_by_css("ul.item_list li.slide", wait_time=1)
 
 # Parse the HTML with BeautifulSoup
