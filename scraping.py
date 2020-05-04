@@ -1,145 +1,73 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[14]:
-
-
 # Import Splinter and BeautifulSoup
 from splinter import Browser
 from bs4 import BeautifulSoup
-import pandas as pd
-import datetime as dt
 
-
-# In[15]:
-
-
-#
+# Define funtion to visit site and scrap for hemisphere name and image url and store results in dictionnary
 def scrape_all():
-    # Initiate headless driver for deployment
-    browser = Browser("chrome", executable_path="chromedriver.exe", headless=True)
-    news_title, news_paragraph = mars_news(browser)
+    # Set the executable path and initialize the chrome browser in splinter
+    executable_path = {"executable_path": "chromedriver"}
+    browser = Browser("chrome", **executable_path)
     
-    # Run all scrapping functions and store results in dictionnary
-    data = {
-            "news_title": news_title,
-            "news_paragraph": news_paragraph,
-            "featured_image": featured_image(browser),
-            "facts": mars_facts(),
-            "last_modified": dt.datetime.now()
-        
-            }
-    if __name__== "__main__":
-        # If running as scrip, print scraped data
-        print(scrape_all())
-    
-    return
-    
-
-
-# In[16]:
-
-
-# Set the executable path and initialize the chrome browser in splinter
-
-
-# In[17]:
-
-
-def mars_news(browser):
-    
-    # visit the Mars NASA news site
-    url ="https://mars.nasa.gov/news"
+    # visit the Astropedia Mars Hemisphere site
+    url ="https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars"
     browser.visit(url)
-
-    # Optional delay for loading the page
-    browser.is_element_present_by_css("ul.item_list li.slide", wait_time=1)
     
+    # Allow delay for loading the page
+    browser.is_element_present_by_css("div.description", wait_time=10)
+
     # Parse the HTML with BeautifulSoup
     html = browser.html
-    news_soup = BeautifulSoup(html, "html.parser")
+    b_soup = BeautifulSoup(html, "html.parser") 
     
-    try:
-        slide_elem = news_soup.select_one("ul.item_list li.slide")
-        slide_elem.find("div", class_="content_title")
+    # find the parent element for the hemisphere title
+    title_elem = b_soup.select("div.description")
     
-        # Use the parent element to find the first "a" tag and save it as "news_title"
-        news_title = slide_elem.find("div", class_="content_title").get_text()
+    # Declare a dictionnary for titles and image urls
+    data = {}
     
-        # Use the parent element to find the paragraph text
-        news_p = slide_elem.find("div", class_="article_teaser_body").get_text()
-    
-    except AttributeError:
-        return None, None
+    # Use the parent element to find all the "h3" tags and save them in a titles list
+    title_list = title_elem.find_all("h3").get_text()
         
-    return news_title, news_p 
-
-
-# ### Featured Images
-
-# In[18]:
-
-
-def featured_image(browser):
-    # Visit url
-    url = "https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars"
-    browser.visit(url)
+    # Call functions to get title and img_url for all the titles
+    for title in title_list:
+     
+        # Store titles and img_url's to dictionnary
+        data = data.update({
+            "title" : title,
+            "img_url" : get_image(browser, b_soup)        
+            })
+        
+        # Return to the Astropedia Mars Hemisphere site
+        browser.visit(url)
+        
+    # If running as script, print scraped data
+    if __name__== "__main__":
+        print(scrape_all())
+        
+    # End the browser session
+    browser.quit()
     
-    # Find and click the full image button
-    full_image_elem = browser.find_by_id ("full_image")
-    full_image_elem.click()
+    return data
+
+# Define the enhanced image urls function
+def get_image(browser, b_soup):
+
+    # Find and click the thumnnail image to get to enhanced image page
+    image_elem = browser.find_next("img", class_="thumb")
+    image_elem.click()
     
-    # Find the more info button and click that
-    browser.is_element_present_by_text ("more info", wait_time=1)
-    more_info_elem = browser.find_link_by_partial_text ("more info")
-    more_info_elem.click()
-    
-    # Parse the resulting HTML with BeautifulSoup
+    # Allow delay for loading the enhanced image page
+    browser.is_element_present_by_text("Original", wait_time=30)
+        
+    # Parse the HTML with BeautifulSoup
     html = browser.html
-    img_soup = BeautifulSoup(html, "html.parser")
+    img_soup = BeautifulSoup(html, "html.parser") 
     
     try:
-        # Find the relative image url
-        img_url_rel = img_soup.select_one ("figure.lede a img").get("src")
-        
+        # Find the urls for the enhanced images
+        img_url = img_soup.find(text="Original").get("href")
+                
     except AttributeError:
         return None
-    
-    # Use the base URL to create an absolute URL
-    img_url = f"https://www.jpl.nasa.gov{img_url_rel}"
-    
-    return img_url
-
-
-# In[19]:
-
-
-def mars_facts():
-    # Add try/except for error handling
-    try:
-        # Use "read_html" to scrape the facts table into a DataFrame
-        df = pd.read_html("https://space-facts.com/mars/")[0]
         
-    except BaseException:
-        return None
-    
-    # Assign columns and set index of dataframe
-    df.columns=["Description", "Value"]
-    df.set_index("Description", inplace=True)
-
-    # Convert dataframe into HTML
-    return df.to_html()
-
-
-# In[20]:
-
-
-# End the browser session
-browser.quit()
-
-
-# In[ ]:
-
-
-
-
+    return img_url
