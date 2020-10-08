@@ -52,3 +52,12 @@ An Web App would  be build to scrape data everytime it is required with a click 
 - Use a Python dictionary to store the data using the keys `img_url` and `title.`
 - Append the dictionary with the image URL string and the hemisphere title to a list. 
 - This list will contain one dictionary for each hemispher
+
+
+## Background
+## Project Overview
+## Resources
+## Data Source
+## Machine Learning Model
+## Findings and Recommendation
+
