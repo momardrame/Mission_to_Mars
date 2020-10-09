@@ -1,3 +1,5 @@
+<img src="pic.jpg" alt="drawing" width="300"/>
+
 # Mission to Mars
 
 # Business Need
